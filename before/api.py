@@ -10,16 +10,19 @@ import os
 import logging
 
 class API:
-    def __init__(self):
-        self.ldap_server = "ldap://192.168.1.100:389"
-        self.ldap_user = "admin"
-        self.ldap_password = "Password123!"
-        self.sql_server = "DRIVER={ODBC Driver 17 for SQL Server};SERVER=192.168.1.200;DATABASE=ProductionDB;UID=sa;PWD=SqlAdmin2023!"
-        self.api_key = "key-1234567890abcdef"
-        self.secret_key = "supersecretkey123456"
-        self.encryption_key = "MyHardcodedEncryptionKey2023"
-        self.admin_password = "admin123"
-        self.backup_urls = ["http://backup1.internal.com", "http://backup2.internal.com"]
+    def __init__(self, config_path="config.json"):
+        # Load sensitive credentials from config file
+        with open(config_path, "r") as f:
+            config = json.load(f)
+        self.ldap_server = config.get("ldap_server")
+        self.ldap_user = config.get("ldap_user")
+        self.ldap_password = config.get("ldap_password")
+        self.sql_server = config.get("sql_server")
+        self.api_key = config.get("api_key")
+        self.secret_key = config.get("secret_key")
+        self.encryption_key = config.get("encryption_key")
+        self.admin_password = config.get("admin_password")
+        self.backup_urls = config.get("backup_urls", [])
         self.connection = None
         self.ldap_conn = None
         self.data = []
