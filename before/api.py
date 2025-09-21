@@ -239,44 +239,45 @@ class API:
         all_data = []
 
         for item in input_data:
+            parsed = None
             if isinstance(item, str):
-                if item.startswith('{') or item.startswith('['):
-                    parsed = self.parse_json_data(item)
-                elif item.startswith('<'):
-                    parsed = self.parse_xml_data(item)
-                else:
-                    continue
-            else:
+                stripped = item.strip()
+                if stripped.startswith('{') or stripped.startswith('['):
+                    parsed = self.parse_json_data(stripped)
+                elif stripped.startswith('<'):
+                    parsed = self.parse_xml_data(stripped)
+            elif isinstance(item, dict):
                 parsed = item
 
             if parsed:
                 processed = self.process_user_data(parsed)
                 all_data.append(processed)
 
-        if all_data:
-            self.save_to_database(all_data)
-
-            if output_file:
-                self.save_to_file(output_file, all_data)
-
-            if backup:
-                self.backup_data(all_data)
-
-            report = self.generate_report(all_data)
-            self.log_activity("PROCESS_COMPLETE", f"Processed {len(all_data)} records")
-
-            return {
-                'success': True,
-                'processed_count': len(all_data),
-                'report': report,
-                'errors': self.errors
-            }
-
-        return {
+        result = {
             'success': False,
             'processed_count': 0,
-            'errors': self.errors
+            'errors': list(self.errors)
         }
+
+        if all_data:
+            db_ok = self.save_to_database(all_data)
+            file_ok = self.save_to_file(output_file, all_data) if output_file else True
+            backup_ok = self.backup_data(all_data) if backup else True
+
+            report = self.generate_report(all_data)
+            self.log_activity(
+                "PROCESS_COMPLETE",
+                f"Processed {len(all_data)} records | DB: {db_ok} | File: {file_ok} | Backup: {backup_ok}"
+            )
+
+            result.update({
+                'success': db_ok and file_ok and backup_ok,
+                'processed_count': len(all_data),
+                'report': report,
+                'errors': list(self.errors)
+            })
+
+        return result
 
     def __del__(self):
         try:
